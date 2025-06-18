@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Poll } from './poll.entity';
 
 @Entity()
 export class Option {
@@ -8,4 +9,7 @@ export class Option {
   @Column()
   text: string;
 
+  // Chaque option est liée à un sondage
+  @ManyToOne(type => Poll, poll => poll.options, { onDelete: 'CASCADE' })
+  poll: Poll;
 }
