@@ -3,6 +3,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SondagesModule } from './sondages/sondages.module';
+import { Poll } from './sondages/poll.entity';
+import { Option } from './sondages/option.entity';
+import { Vote } from './sondages/vote.entity';
 
 @Module({
   imports: [
@@ -13,9 +16,10 @@ import { SondagesModule } from './sondages/sondages.module';
       username: 'postgres',        
       password: 'password',
       database: 'sondagedb',
-      entities: [],  
+      entities: [Poll, Option, Vote],  
       synchronize: true,          
     }),
+    TypeOrmModule.forFeature([Poll, Option, Vote]),
     SondagesModule,
     
   ],
