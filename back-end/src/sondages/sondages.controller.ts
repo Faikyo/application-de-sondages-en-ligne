@@ -1,18 +1,14 @@
-import { Controller, Get, Post, Param, Body, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body } from '@nestjs/common';
 import { SondagesService } from './sondages.service';
+import { CreatePollDto, VoteDto } from './sondages.dto';
 
 @Controller('sondages')
 export class SondagesController {
   constructor(private readonly sondagesService: SondagesService) {}
 
   @Post()
-  async createPoll(@Body() body: {
-    title: string;
-    description?: string;
-    multiple: boolean;
-    options: string[];
-  }) {
-    return this.sondagesService.createPoll(body);
+  async createPoll(@Body() dto: CreatePollDto) {
+    return this.sondagesService.createPoll(dto);
   }
 
   @Get()
@@ -21,23 +17,16 @@ export class SondagesController {
   }
 
   @Get(':id/resultats')
-  async getResults(@Param('id', ParseIntPipe) id: number) {
+  async getResults(@Param('id') id: number) {
     return this.sondagesService.getResults(id);
   }
 
   @Post(':id/vote')
   async vote(
-    @Param('id', ParseIntPipe) pollId: number,
-    @Body() body: {
-      voter: string;
-      optionIds: number[];
-    },
+    @Param('id') pollId: number,
+    @Body() voteDto: VoteDto,
   ) {
-    const voteData = {
-      pollId,
-      voter: body.voter,
-      optionIds: body.optionIds,
-    };
-    return this.sondagesService.vote(voteData);
+    voteDto.pollId = pollId;
+    return this.sondagesService.vote(voteDto);
   }
 }
