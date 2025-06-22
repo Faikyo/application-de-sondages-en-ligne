@@ -29,27 +29,80 @@ export class SondagesService {
     return this.pollRepo.find({ relations: ['options'] });
   }
 
-  async getResults(pollId: number) {
-    const options = await this.optionRepo.find({ where: { poll: { id: pollId } } });
-    const counts = {};
-    for (const opt of options) {
-      counts[opt.id] = await this.voteRepo.count({ where: { option: opt } });
-    }
-    return counts;
+ async getResults(pollId: number) {
+  const poll = await this.pollRepo.findOne({
+    where: { id: pollId },
+    relations: ['options']  
+  });
+  
+  if (!poll) {
+    throw new Error('Sondage introuvable');
   }
-
-  async vote(voteDto: VoteDto): Promise<string> {
-    const { pollId, voter, optionIds } = voteDto;
-    const existing = await this.voteRepo.findOne({ where: { poll: { id: pollId }, voter } });
-    if (existing) {
-      throw new Error('Vous avez déjà voté pour ce sondage');
-    }
-
-    for (const optId of optionIds) {
-      const vote = this.voteRepo.create({ poll: { id: pollId } as Poll, voter, option: { id: optId } as Option });
-      await this.voteRepo.save(vote);
-    }
-    
-    return 'Vote enregistré';
+  
+  const results: { optionId: number; text: string; votes: number }[]  = [];
+  let totalVotes = 0;
+  
+  for (const option of poll.options) {
+    const count = await this.voteRepo.count({ 
+      where: { option: { id: option.id } } 
+    });
+    results.push({
+      optionId: option.id,
+      text: option.text,
+      votes: count
+    });
+    totalVotes += count;  
   }
+  
+  return {
+    poll: {
+      id: poll.id,
+      title: poll.title,
+      description: poll.description,
+      multiple: poll.multiple
+    },
+    results,
+    totalVotes 
+  };
+}
+
+async vote(voteDto: VoteDto): Promise<string> {
+  const { pollId, voter, optionIds } = voteDto;
+  
+  // Récupérer le sondage pour vérifier la règle 'multiple'
+  const poll = await this.pollRepo.findOne({ 
+    where: { id: pollId },
+    relations: ['options']
+  });
+  
+  if (!poll) {
+    throw new Error('Sondage introuvable');
+  }
+  
+  // Vérifier si l'utilisateur a déjà voté
+  const existing = await this.voteRepo.findOne({ 
+    where: { poll: { id: pollId }, voter } 
+  });
+  
+  if (existing) {
+    throw new Error('Vous avez déjà voté pour ce sondage');
+  }
+  
+  // Vérifier la contrainte multiple
+  if (!poll.multiple && optionIds.length > 1) {
+    throw new Error('Ce sondage n\'autorise qu\'une seule réponse');
+  }
+  
+  // Enregistrer les votes
+  for (const optId of optionIds) {
+    const vote = this.voteRepo.create({ 
+      poll: { id: pollId } as Poll, 
+      voter, 
+      option: { id: optId } as Option 
+    });
+    await this.voteRepo.save(vote);
+  }
+  
+  return 'Vote enregistré avec succès';
+}
 }
