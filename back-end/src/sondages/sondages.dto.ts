@@ -1,4 +1,4 @@
-import { IsString, IsBoolean, ArrayMinSize, IsArray } from 'class-validator';
+import { IsString, IsBoolean, ArrayMinSize, IsArray, IsOptional, IsNumber } from 'class-validator';
 
 export class CreatePollDto {
   @IsString()
@@ -18,11 +18,10 @@ export class CreatePollDto {
 
 export class VoteDto {
   
-  pollId: number;
-
   @IsString()
   voter: string;
 
   @IsArray()
+  @IsNumber({}, { each: true })
   optionIds: number[];  
 }

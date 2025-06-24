@@ -26,7 +26,7 @@ export class SondagesController {
     @Param('id') pollId: number,
     @Body() voteDto: VoteDto,
   ) {
-    voteDto.pollId = pollId;
-    return this.sondagesService.vote(voteDto);
+    
+    return this.sondagesService.vote(pollId,voteDto);
   }
 }
