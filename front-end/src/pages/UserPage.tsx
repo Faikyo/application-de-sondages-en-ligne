@@ -1,4 +1,3 @@
-// src/pages/UserPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiService, { type Poll, type PollResults } from '../services/api';

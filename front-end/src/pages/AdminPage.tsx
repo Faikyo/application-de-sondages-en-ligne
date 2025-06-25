@@ -1,8 +1,11 @@
-// src/pages/AdminPage.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiService from '../services/api';
 
+/**
+ * Page d'administration pour créer des sondages
+ * Accessible uniquement avec l'identifiant "admin"
+ */
 const AdminPage: React.FC = () => {
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
@@ -11,10 +14,27 @@ const AdminPage: React.FC = () => {
   const [options, setOptions] = useState(['', '']);
   const [message, setMessage] = useState('');
 
+  /**
+   * Vérifie que l'utilisateur est bien admin au chargement
+   */
+  useEffect(() => {
+    const userId = sessionStorage.getItem('userId');
+    if (userId !== 'admin') {
+      navigate('/');
+    }
+  }, [navigate]);
+
+  /**
+   * Ajoute une nouvelle option vide
+   */
   const handleAddOption = () => {
     setOptions([...options, '']);
   };
 
+  /**
+   * Supprime une option à l'index donné
+   * Empêche la suppression s'il reste moins de 2 options
+   */
   const handleRemoveOption = (index: number) => {
     if (options.length > 2) {
       const newOptions = options.filter((_, i) => i !== index);
@@ -22,12 +42,19 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  /**
+   * Met à jour le texte d'une option
+   */
   const handleOptionChange = (index: number, value: string) => {
     const newOptions = [...options];
     newOptions[index] = value;
     setOptions(newOptions);
   };
 
+  /**
+   * Soumet le formulaire et crée le sondage
+   * Valide qu'il y a au moins 2 options non vides
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -57,11 +84,16 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  const handleLogout = () => {
+    sessionStorage.removeItem('userId');
+    navigate('/');
+  };
+
   return (
     <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>Interface Admin</h1>
-        <button onClick={() => navigate('/')} style={{ padding: '5px 10px' }}>
+        <button onClick={handleLogout} style={{ padding: '5px 10px' }}>
           Déconnexion
         </button>
       </div>

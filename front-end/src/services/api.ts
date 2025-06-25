@@ -1,5 +1,3 @@
-// src/services/api.ts
-
 /** URL de base de l'API backend */
 const API_URL = 'http://localhost:3000/api';
 

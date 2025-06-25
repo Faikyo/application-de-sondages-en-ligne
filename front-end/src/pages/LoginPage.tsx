@@ -1,10 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+/**
+ * Page de connexion de l'application
+ * Redirige vers /admin si l'identifiant est "admin"
+ * Redirige vers /user pour tout autre identifiant
+ */
 const LoginPage: React.FC = () => {
   const [userId, setUserId] = useState('');
   const navigate = useNavigate();
 
+  /**
+   * Gère la soumission du formulaire de connexion
+   * Stocke l'identifiant dans sessionStorage et redirige selon le rôle
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
