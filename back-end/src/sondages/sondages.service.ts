@@ -6,6 +6,10 @@ import { Option } from './option.entity';
 import { Vote } from './vote.entity';
 import { CreatePollDto, VoteDto } from './sondages.dto';
 
+/**
+ * Service gérant la logique métier des sondages
+ * Gère la création, consultation et vote des sondages
+ */
 @Injectable()
 export class SondagesService {
   constructor(
@@ -17,18 +21,47 @@ export class SondagesService {
     private voteRepo: Repository<Vote>,
   ) {}
 
+  /**
+   * Crée un nouveau sondage avec ses options
+   * @param dto - Données du sondage à créer
+   * @returns Le sondage créé avec ses options
+   * @example
+   * createPoll({
+   *   title: "Langage préféré ?",
+   *   description: "Choisissez votre langage",
+   *   multiple: false,
+   *   options: ["JavaScript", "Python", "Java"]
+   * })
+   */
   async createPoll(dto: CreatePollDto): Promise<Poll> {
     const { title, description, multiple, options } = dto;
+    
+    // Créer l'entité sondage
     const poll = this.pollRepo.create({ title, description, multiple });
+    
+    // Créer les options associées
     poll.options = options.map(text => this.optionRepo.create({ text }));
+    
+    // Sauvegarder en cascade (sondage + options)
     return this.pollRepo.save(poll);
   }
 
+  /**
+   * Récupère tous les sondages avec leurs options
+   * @returns Liste de tous les sondages
+   */
   findAll(): Promise<Poll[]> {
     return this.pollRepo.find({ relations: ['options'] });
   }
 
+  /**
+   * Récupère les résultats détaillés d'un sondage
+   * @param pollId - ID du sondage
+   * @returns Résultats avec nombre de votes par option
+   * @throws NotFoundException si le sondage n'existe pas
+   */
   async getResults(pollId: number) {
+    // Rechercher le sondage avec ses options
     const poll = await this.pollRepo.findOne({
       where: { id: pollId },
       relations: ['options']  
@@ -38,6 +71,7 @@ export class SondagesService {
       throw new NotFoundException('Sondage introuvable');
     }
     
+    // Calculer les votes pour chaque option
     const results: { optionId: number; text: string; votes: number }[] = [];
     let totalVotes = 0;
     
@@ -53,6 +87,7 @@ export class SondagesService {
       totalVotes += count;  
     }
     
+    // Retourner les résultats formatés
     return {
       poll: {
         id: poll.id,
@@ -65,6 +100,17 @@ export class SondagesService {
     };
   }
 
+  /**
+   * Enregistre le vote d'un utilisateur
+   * @param pollId - ID du sondage
+   * @param voteDto - Données du vote (voter et options choisies)
+   * @returns Message de confirmation
+   * @throws NotFoundException si le sondage n'existe pas
+   * @throws BadRequestException si :
+   *   - L'utilisateur a déjà voté
+   *   - Plusieurs options choisies pour un sondage simple
+   *   - Options invalides
+   */
   async vote(pollId: number, voteDto: VoteDto): Promise<{ message: string }> {
     const { voter, optionIds } = voteDto;
     
@@ -100,7 +146,7 @@ export class SondagesService {
       throw new BadRequestException('Une ou plusieurs options sont invalides');
     }
     
-    // Enregistrer les votes
+    // Enregistrer les votes (un vote par option choisie)
     for (const optId of optionIds) {
       const vote = this.voteRepo.create({ 
         poll: { id: pollId } as Poll, 
@@ -113,6 +159,12 @@ export class SondagesService {
     return { message: 'Vote enregistré avec succès' };
   }
 
+  /**
+   * Vérifie si un utilisateur a déjà voté pour un sondage
+   * @param pollId - ID du sondage
+   * @param voter - Identifiant de l'utilisateur
+   * @returns Objet indiquant si l'utilisateur a voté
+   */
   async hasUserVoted(pollId: number, voter: string): Promise<{ hasVoted: boolean }> {
     const vote = await this.voteRepo.findOne({ 
       where: { poll: { id: pollId }, voter } 

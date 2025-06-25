@@ -3,20 +3,38 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiService, { type Poll, type PollResults } from '../services/api';
 
+/**
+ * Page principale pour les utilisateurs
+ * Permet de visualiser les sondages, voter et consulter les résultats
+ */
 const UserPage: React.FC = () => {
   const navigate = useNavigate();
+  
+  // États du composant
+  /** Liste de tous les sondages disponibles */
   const [polls, setPolls] = useState<Poll[]>([]);
+  /** Sondage actuellement sélectionné */
   const [selectedPoll, setSelectedPoll] = useState<Poll | null>(null);
+  /** IDs des options sélectionnées pour le vote */
   const [selectedOptions, setSelectedOptions] = useState<number[]>([]);
+  /** Résultats du sondage après vote */
   const [pollResults, setPollResults] = useState<PollResults | null>(null);
+  /** Message d'information ou d'erreur */
   const [message, setMessage] = useState('');
+  /** Indique si l'utilisateur a déjà voté */
   const [hasVoted, setHasVoted] = useState(false);
+  /** Identifiant de l'utilisateur connecté */
   const [userId, setUserId] = useState('');
 
+  /**
+   * Hook d'initialisation
+   * Vérifie la connexion et charge les sondages
+   */
   useEffect(() => {
-    // Récupérer l'ID utilisateur
+    // Récupérer l'ID utilisateur depuis sessionStorage
     const storedUserId = sessionStorage.getItem('userId');
     if (!storedUserId) {
+      // Rediriger vers login si non connecté
       navigate('/');
       return;
     }
@@ -24,6 +42,9 @@ const UserPage: React.FC = () => {
     loadPolls();
   }, [navigate]);
 
+  /**
+   * Charge tous les sondages disponibles depuis l'API
+   */
   const loadPolls = async () => {
     try {
       const data = await apiService.getAllPolls();
@@ -33,7 +54,13 @@ const UserPage: React.FC = () => {
     }
   };
 
+  /**
+   * Gère la sélection d'un sondage
+   * Vérifie si l'utilisateur a déjà voté et charge les résultats si c'est le cas
+   * @param poll - Le sondage sélectionné
+   */
   const handleSelectPoll = async (poll: Poll) => {
+    // Réinitialiser l'état
     setSelectedPoll(poll);
     setSelectedOptions([]);
     setPollResults(null);
@@ -45,8 +72,8 @@ const UserPage: React.FC = () => {
       const { hasVoted: userHasVoted } = await apiService.hasUserVoted(poll.id, userId);
       setHasVoted(userHasVoted);
       
-      // Si l'utilisateur a déjà voté, charger directement les résultats
       if (userHasVoted) {
+        // Charger directement les résultats si déjà voté
         await loadResults(poll.id);
         setMessage('✅ Vous avez déjà voté pour ce sondage');
       }
@@ -55,37 +82,57 @@ const UserPage: React.FC = () => {
     }
   };
 
+  /**
+   * Gère le changement de sélection d'une option
+   * @param optionId - ID de l'option
+   * @param checked - État de sélection
+   */
   const handleOptionChange = (optionId: number, checked: boolean) => {
     if (selectedPoll?.multiple) {
+      // Sondage à choix multiples
       if (checked) {
         setSelectedOptions([...selectedOptions, optionId]);
       } else {
         setSelectedOptions(selectedOptions.filter(id => id !== optionId));
       }
     } else {
+      // Sondage à choix unique
       setSelectedOptions([optionId]);
     }
   };
 
+  /**
+   * Enregistre le vote de l'utilisateur
+   * Valide la sélection et envoie le vote à l'API
+   */
   const handleVote = async () => {
+    // Validation
     if (!selectedPoll || selectedOptions.length === 0) {
       setMessage('❌ Sélectionnez au moins une option');
       return;
     }
 
     try {
+      // Envoyer le vote
       await apiService.vote(selectedPoll.id, {
         voter: userId,
         optionIds: selectedOptions,
       });
+      
       setMessage('✅ Vote enregistré!');
       setHasVoted(true);
+      
+      // Charger les résultats immédiatement
       await loadResults(selectedPoll.id);
     } catch (err: any) {
       setMessage(`❌ ${err.message}`);
     }
   };
 
+  /**
+   * Charge les résultats d'un sondage
+   * @param pollId - ID du sondage
+   */
   const loadResults = async (pollId: number) => {
     try {
       const results = await apiService.getPollResults(pollId);
@@ -102,6 +149,7 @@ const UserPage: React.FC = () => {
       minHeight: '100vh',
       color: '#333'
     }}>
+      {/* En-tête avec déconnexion */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
@@ -128,6 +176,7 @@ const UserPage: React.FC = () => {
         </button>
       </div>
 
+      {/* Message d'information */}
       {message && <p style={{ 
         padding: '10px', 
         backgroundColor: message.includes('✅') ? '#d4edda' : '#f8d7da',
@@ -172,7 +221,7 @@ const UserPage: React.FC = () => {
           ))}
         </div>
 
-        {/* Détails du sondage */}
+        {/* Zone de vote/résultats */}
         {selectedPoll && (
           <div style={{ 
             flex: 1, 
@@ -190,7 +239,9 @@ const UserPage: React.FC = () => {
                 : '(Une seule réponse possible)'}
             </p>
 
+            {/* Affichage conditionnel : formulaire de vote ou résultats */}
             {!hasVoted && !pollResults ? (
+              // Formulaire de vote
               <>
                 <div style={{ margin: '20px 0' }}>
                   {selectedPoll.options.map(option => (
@@ -229,6 +280,7 @@ const UserPage: React.FC = () => {
                 </button>
               </>
             ) : pollResults ? (
+              // Affichage des résultats
               <>
                 <h3 style={{ color: '#333' }}>Résultats:</h3>
                 <p style={{ color: '#666' }}>Total des votes: {pollResults.totalVotes}</p>
@@ -278,6 +330,7 @@ const UserPage: React.FC = () => {
                 </button>
               </>
             ) : (
+              // État de chargement
               <p style={{ color: '#666', fontStyle: 'italic' }}>
                 Chargement...
               </p>
