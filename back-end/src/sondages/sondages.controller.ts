@@ -21,12 +21,19 @@ export class SondagesController {
     return this.sondagesService.getResults(id);
   }
 
+  @Get(':id/has-voted/:voter')
+  async hasVoted(
+    @Param('id') pollId: number,
+    @Param('voter') voter: string,
+  ) {
+    return this.sondagesService.hasUserVoted(pollId, voter);
+  }
+
   @Post(':id/vote')
   async vote(
     @Param('id') pollId: number,
     @Body() voteDto: VoteDto,
   ) {
-    
-    return this.sondagesService.vote(pollId,voteDto);
+    return this.sondagesService.vote(pollId, voteDto);
   }
 }

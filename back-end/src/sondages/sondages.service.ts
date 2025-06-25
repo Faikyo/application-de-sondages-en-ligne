@@ -112,4 +112,12 @@ export class SondagesService {
     
     return { message: 'Vote enregistré avec succès' };
   }
+
+  async hasUserVoted(pollId: number, voter: string): Promise<{ hasVoted: boolean }> {
+    const vote = await this.voteRepo.findOne({ 
+      where: { poll: { id: pollId }, voter } 
+    });
+    
+    return { hasVoted: !!vote };
+  }
 }

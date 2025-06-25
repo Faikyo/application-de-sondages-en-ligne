@@ -93,6 +93,16 @@ class ApiService {
     
     return response.json();
   }
+
+  async hasUserVoted(pollId: number, voter: string): Promise<{ hasVoted: boolean }> {
+    const response = await fetch(`${API_URL}/sondages/${pollId}/has-voted/${encodeURIComponent(voter)}`);
+    
+    if (!response.ok) {
+      throw new Error('Erreur lors de la vérification du vote');
+    }
+    
+    return response.json();
+  }
 }
 
 export default new ApiService();
